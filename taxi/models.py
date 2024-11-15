@@ -28,40 +28,64 @@ class Car(models.Model):
 
 
 class City(models.Model):
-    name = models.CharField('City', max_length=511, null=False, blank=False)
+    name = models.CharField('City', max_length=511, primary_key=True)
+
+    def __str__(self) -> str:
+        return f'{self.name}'
 
 
 class District(models.Model):
-    models.ForeignKey(
+    city = models.ForeignKey(
         City,
         null=False,
         blank=False,
-        related_name='items',
+        related_name='districts',
         on_delete=models.CASCADE
     )
     name = models.CharField('District', max_length=511, null=False, blank=False)
 
+    def __str__(self) -> str:
+        return f'{self.city} {self.name}'
+
+    class Meta:
+        unique_together = (('city', 'name'),)
+        ordering = 'city name'.split()
+
 
 class Street(models.Model):
-    models.ForeignKey(
+    district = models.ForeignKey(
         District,
         null=False,
         blank=False,
-        related_name='items',
+        related_name='streets',
         on_delete=models.CASCADE
     )
     name = models.CharField('Street name', max_length=511, null=False, blank=False)
 
+    def __str__(self) -> str:
+        return f'{self.district} {self.name}'
+
+    class Meta:
+        unique_together = (('district', 'name'),)
+        ordering = 'district name'.split()
+
 
 class Address(models.Model):
-    models.ForeignKey(
+    street = models.ForeignKey(
         Street,
         null=False,
         blank=False,
-        related_name='items',
+        related_name='addresses',
         on_delete=models.CASCADE,
     )
     name = models.CharField('Address name', max_length=10, null=False, blank=False)
+
+    def __str__(self) -> str:
+        return f'{self.street} {self.name}'
+
+    class Meta:
+        unique_together = (('street', 'name'),)
+        ordering = 'street name'.split()
 
 
 class Driver(models.Model):
@@ -109,9 +133,12 @@ class Ride(models.Model):
     date_created = models.DateTimeField(default=datetime.datetime.now)
     date_ended = models.DateTimeField(default=None, null=True)
 
+    def __str__(self):
+        return f'{self.id} {self.driver} {self.consumer} Price: {self.price} at: {self.date_created}'
+
     class Meta:
         unique_together = (('consumer', 'driver', 'date_created'),)
-        ordering = 'date_created '.split()
+        ordering = 'driver date_created '.split()
  
     @property
     def price(self):
@@ -121,17 +148,24 @@ class Ride(models.Model):
         pass
 
 
-class Rate():
+class Rate(models.Model):
     ride = models.ForeignKey(
         Ride,
         on_delete=models.PROTECT,
-        related_name='rates'
     )
     comment = models.TextField('Comment', blank=False, null=False)
-    rate = models.PositiveIntegerField('Rate',  validators.MaxValueValidator(5))
+    rate = models.PositiveIntegerField('Rate',  validators=(validators.MaxValueValidator(5),))
+    date_created = models.DateTimeField(default=datetime.datetime.now, null=False, blank=False)
+
+    def __str__(self):
+        return f'{self.target} Rate: {self.rate} Author: {self.author}'
+
+    class Meta:
+        abstract=True
+        ordering = 'target date_created'.split()
 
 
-class DriverRate(models.Model, Rate):
+class DriverRate(Rate):
     author = models.ForeignKey(
         Consumer,
         on_delete=models.PROTECT,
@@ -144,7 +178,7 @@ class DriverRate(models.Model, Rate):
     )
 
 
-class ConsumerRate(models.Model, Rate):
+class ConsumerRate(Rate):
     target = models.ForeignKey(
         Consumer,
         on_delete=models.PROTECT,
