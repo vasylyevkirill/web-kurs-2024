@@ -23,12 +23,18 @@ class Car(models.Model):
         'Comfort class', max_length=50, choices=CarComfortClass.choices
     )
 
+    class Meta:
+        verbose_name_plural = 'Машины'
+
     def __str__(self):
         return f'{self.number}: {self.color} {self.make} {self.series}'
 
 
 class City(models.Model):
     name = models.CharField('City', max_length=511, primary_key=True)
+
+    class Meta:
+        verbose_name_plural = 'Города'
 
     def __str__(self) -> str:
         return f'{self.name}'
@@ -48,6 +54,7 @@ class District(models.Model):
         return f'{self.city} {self.name}'
 
     class Meta:
+        verbose_name_plural = 'Районы'
         unique_together = (('city', 'name'),)
         ordering = 'city name'.split()
 
@@ -65,7 +72,8 @@ class Street(models.Model):
     def __str__(self) -> str:
         return f'{self.district} {self.name}'
 
-    class Meta:
+    class Meta:  
+        verbose_name_plural = 'Улицы'
         unique_together = (('district', 'name'),)
         ordering = 'district name'.split()
 
@@ -84,6 +92,7 @@ class Address(models.Model):
         return f'{self.street} {self.name}'
 
     class Meta:
+        verbose_name_plural = 'Адреса'
         unique_together = (('street', 'name'),)
         ordering = 'street name'.split()
 
@@ -103,6 +112,9 @@ class Driver(models.Model):
 
     location = models.ForeignKey(District, on_delete=models.PROTECT, null=True)
 
+    class Meta:
+        verbose_name_plural = 'Водители'
+
     def __str__(self):
         return f'Driver: {self.user}'
         
@@ -113,6 +125,9 @@ class Consumer(models.Model):
         on_delete=models.CASCADE,
         primary_key=True,
     )
+
+    class Meta:
+        verbose_name_plural = 'Пассажиры'
 
     def __str__(self):
         return f'Consumer: {self.user}'
@@ -137,6 +152,7 @@ class Ride(models.Model):
         return f'{self.id} {self.driver} {self.consumer} Price: {self.price} at: {self.date_created}'
 
     class Meta:
+        verbose_name_plural = 'Поездки'
         unique_together = (('consumer', 'driver', 'date_created'),)
         ordering = 'driver date_created '.split()
  
@@ -162,6 +178,7 @@ class Rate(models.Model):
 
     class Meta:
         abstract=True
+        verbose_name_plural = 'Оценки'
         ordering = 'target date_created'.split()
 
 
@@ -177,6 +194,9 @@ class DriverRate(Rate):
         related_name='rates'
     )
 
+    class Meta:
+        verbose_name_plural = 'Оценки водителей'
+
 
 class ConsumerRate(Rate):
     target = models.ForeignKey(
@@ -189,6 +209,8 @@ class ConsumerRate(Rate):
         on_delete=models.PROTECT,
         related_name='rates_authored'
     )
+    class Meta:
+        verbose_name_plural = 'Оценки пассажиров'
 
 
 class RideAddressesQueue(models.Model):
@@ -218,6 +240,7 @@ class RideAddressesQueue(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
+        verbose_name_plural = 'Истории путей'
         unique_together = (('ride', 'address'),)
         ordering = 'order date_ended date_created'.split()
 
