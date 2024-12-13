@@ -3,6 +3,7 @@ import datetime
 from django.db import models
 from django.conf import settings
 from django.core import validators
+from simple_history.models import HistoricalRecords
 
 
 class Car(models.Model):
@@ -19,9 +20,9 @@ class Car(models.Model):
     series = models.CharField('Series', max_length=100, blank=False, null=False)
 
     is_ready = models.BooleanField('Ready to use', default=True, blank=False, null=False)
-    comfort_class = models.CharField(
-        'Comfort class', max_length=50, choices=CarComfortClass.choices
-    )
+    comfort_class = models.CharField( 'Comfort class', max_length=50, choices=CarComfortClass.choices) 
+
+    history = HistoricalRecords()
 
     class Meta:
         verbose_name_plural = 'Машины'
@@ -97,7 +98,17 @@ class Address(models.Model):
         ordering = 'street name'.split()
 
 
+class DriverManager(models.Manager):
+    def available(self): 
+        return self.objects.filter(rides__date_ended__isnull=False).annotate(num_b=Count('b')).filter(num_b__gt=0).filter(current_car_isnull=True).count() > 0
+    def free(self):
+        return Q()
+
+
 class Driver(models.Model):
+    objects = DriverManager()
+    history = HistoricalRecords()
+    
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -112,6 +123,15 @@ class Driver(models.Model):
 
     location = models.ForeignKey(District, on_delete=models.PROTECT, null=True)
 
+    @property
+    def if_free(self) -> bool:
+        return self.current_car is not None and \
+            not self.rides.filter(date_ended__isnull).count()
+
+    @property
+    def average_rating(self) -> float:
+        return self.rates.aggregate(models.Sum('rate'))['rate__sum'] / self.rates.count()
+
     class Meta:
         verbose_name_plural = 'Водители'
 
@@ -125,6 +145,9 @@ class Consumer(models.Model):
         on_delete=models.CASCADE,
         primary_key=True,
     )
+
+    location = models.ForeignKey(District, on_delete=models.PROTECT, null=True)
+    history = HistoricalRecords()
 
     class Meta:
         verbose_name_plural = 'Пассажиры'
@@ -145,8 +168,9 @@ class Ride(models.Model):
         related_name='rides',
         null=True
     )
-    date_created = models.DateTimeField(default=datetime.datetime.now)
+    date_created = models.DateTimeField(auto_now_add=True)
     date_ended = models.DateTimeField(default=None, null=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return f'{self.id} {self.driver} {self.consumer} Price: {self.price} at: {self.date_created}'
@@ -159,6 +183,7 @@ class Ride(models.Model):
     @property
     def price(self):
         pass
+
     @property
     def status(self):
         pass
@@ -171,7 +196,7 @@ class Rate(models.Model):
     )
     comment = models.TextField('Comment', blank=False, null=False)
     rate = models.PositiveIntegerField('Rate',  validators=(validators.MaxValueValidator(5),))
-    date_created = models.DateTimeField(default=datetime.datetime.now, null=False, blank=False)
+    date_created = models.DateTimeField('Date created', auto_now_add=True)
 
     def __str__(self):
         return f'{self.target} Rate: {self.rate} Author: {self.author}'
@@ -227,13 +252,16 @@ class RideAddressesQueue(models.Model):
         related_name='rides',
     )
     order = models.PositiveIntegerField('Order', default=0)
-    date_created = models.DateTimeField(default=datetime.datetime.now)
+    date_created = models.DateTimeField(auto_now_add=True)
     date_ended = models.DateTimeField(default=None, null=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return f'{self.order + 1}. {self.ride}'
 
     def save(self, *args, force_insert=False, **kwargs):
+        if self.date_ended and self.date_ended < self.date_created:
+            raise ValueError(__name__ + 'date_created date_created > date_endede')
         if force_insert:
             default_order = SubjectScheduleItemQueue.objects.filter(subject_item=self.subject_item).count()
             self.order = default_order
