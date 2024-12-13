@@ -1,0 +1,56 @@
+services:
+  db:
+    image: postgres:16.4
+    platform: linux/amd64
+    container_name: ${SERVICE}_dev_db
+    volumes:
+      - ./postgres:/docker-entrypoint-initdb.d
+      - taxi-database:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: $DATABASE_USER
+      POSTGRES_PASSWORD: $DATABASE_PASSWORD
+      POSTGRES_DB: $DATABASE_NAME
+    ports:
+      - "127.0.0.1:${DATABASE_PORT}:${DATABASE_PORT}"
+    command: -p ${DATABASE_PORT}
+
+  backend:
+    &WEB
+    container_name: ${SERVICE}_dev_backend
+    env_file: .env
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    environment:
+      DJANGO_DEBUG: 1
+      DATABASE_PROVIDER: mysql
+    volumes:
+      - ./:/app
+    ports:
+      - "127.0.0.1:${BACKEND_PORT}:${BACKEND_PORT}"
+    depends_on:
+      - db
+
+  celery:
+    <<: *WEB
+    container_name: ${SERVICE}_dev_celery
+    ports: []
+    command: >
+      bash -c 'celery -A main worker -B -s /tmp/celerybeat-schedule -Q normal_queue,low_queue,high_queue,schedule_queue,celery -l info'
+    depends_on:
+      - db
+      - redis
+
+  redis:
+    image: redis:latest
+    container_name: ${SERVICE}_dev_redis
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+
+volumes:
+  taxi-database:
+     external: true
