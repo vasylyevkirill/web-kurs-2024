@@ -73,6 +73,7 @@ class StreetViewSet(viewsets.ModelViewSet):
 
 class AddressViewSet(viewsets.ModelViewSet):
     queryset = Address.objects.all().select_related('street')
+    serializer_class = AddressSerializer
     pagination_class = LargeResultsSetPagination
     filter_backends = [SearchFilter]
     search_fields = ['name', 'full_address']
