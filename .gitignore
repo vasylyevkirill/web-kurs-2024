@@ -160,3 +160,4 @@ cython_debug/
 
 # Media folder
 media
+dumpfile.sql

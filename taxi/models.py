@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 from django.db import models
 from django.conf import settings
@@ -98,22 +98,53 @@ class Address(models.Model):
         ordering = 'street name'.split()
 
 
-class DriverManager(models.Manager):
-    def available(self): 
-        return self.objects.filter(rides__date_ended__isnull=False).annotate(num_b=Count('b')).filter(num_b__gt=0).filter(current_car_isnull=True).count() > 0
-    def free(self):
-        return Q()
+def get_user_directory_path(self, instance, filename: str) -> str:
+    return f'profile/{instance.user.username}/{filename}'
 
 
-class Driver(models.Model):
-    objects = DriverManager()
+class AbstractTaxiUser(models.Model):
     history = HistoricalRecords()
+    location = models.ForeignKey(District, on_delete=models.PROTECT, null=True)
+    profile_image = models.ImageField(
+        'Profile image',
+        upload_to=get_user_directory_path,
+        null=True,
+        blank=False,
+    )
     
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         primary_key=True,
     )
+
+    @property
+    def average_rating(self) -> float:
+        return self.rates.aggregate(models.Sum('rate'))['rate__sum'] / self.rates.count()
+
+    @property
+    def profile_image_url(self) -> str:
+        return self.profile_image.url
+
+    def __str__(self):
+        return f'f{self.__metaclass__.verbose_name}: {self.user}'
+
+    class Meta:
+        verbose_name='Пользователь'
+        abstract=True
+
+
+class DriverManager(models.Manager):
+    def available(self): 
+        return self.objects.filter(rides__date_ended__isnull=False
+            ).annotate(num_b=Count('b')).filter(num_b__gt=0
+            ).filter(current_car_isnull=True).count() > 0
+    def free(self):
+        return self.objects.all()
+
+
+class Driver(AbstractTaxiUser):
+    objects = DriverManager()
 
     current_car = models.OneToOneField(
         Car,
@@ -121,42 +152,30 @@ class Driver(models.Model):
         null=True,
     )
 
-    location = models.ForeignKey(District, on_delete=models.PROTECT, null=True)
-
     @property
     def if_free(self) -> bool:
         return self.current_car is not None and \
             not self.rides.filter(date_ended__isnull).count()
 
-    @property
-    def average_rating(self) -> float:
-        return self.rates.aggregate(models.Sum('rate'))['rate__sum'] / self.rates.count()
-
     class Meta:
         verbose_name_plural = 'Водители'
+        verbose_name = 'Водитель'
 
-    def __str__(self):
-        return f'Driver: {self.user}'
-        
 
-class Consumer(models.Model):
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        primary_key=True,
-    )
-
-    location = models.ForeignKey(District, on_delete=models.PROTECT, null=True)
-    history = HistoricalRecords()
-
+class Consumer(AbstractTaxiUser):
     class Meta:
         verbose_name_plural = 'Пассажиры'
-
-    def __str__(self):
-        return f'Consumer: {self.user}'
-    
+        verbose_name = 'Пассажир'
+ 
 
 class Ride(models.Model):
+    # Status list
+    SEARCHING_DRIVER = 'Searching driver'
+    WAITING_DRIVER = 'Wating driver'
+    IN_PROGRESS = 'In progress'
+    COMPLETED = 'Completed'
+    
+    # Model fields declaration
     consumer = models.ForeignKey(
         Consumer,
         on_delete=models.PROTECT,
@@ -181,12 +200,19 @@ class Ride(models.Model):
         ordering = 'driver date_created '.split()
  
     @property
-    def price(self):
-        pass
+    def price(self) -> int:
+        return 1337
 
     @property
-    def status(self):
-        pass
+    def status(self) -> str:
+        if not driver:
+            return self.SEARCHING_DRIVER
+        elif not self.addresses.first().date_ended:
+            return self.WAITING_DRIVER
+        elif not self.date_ended:
+            return self.IN_PROGRESS
+        else:
+            return self.COMPLETED
 
 
 class Rate(models.Model):
@@ -261,14 +287,17 @@ class RideAddressesQueue(models.Model):
 
     def save(self, *args, force_insert=False, **kwargs):
         if self.date_ended and self.date_ended < self.date_created:
-            raise ValueError(__name__ + 'date_created date_created > date_endede')
+            raise ValueError(__name__ + ' date_created error: date_created > date_ended')
         if force_insert:
-            default_order = SubjectScheduleItemQueue.objects.filter(subject_item=self.subject_item).count()
+            default_order = RideAddressesQueue.objects.filter(ride=self.ride).count()
             self.order = default_order
         super().save(*args, **kwargs)
+        if RideAddressesQueue.objects.filter(ride=self.ride, date_ended__isnull=False).count():
+            self.ride.date_ended = datetime.now()
+            self.ride.save()
 
     class Meta:
-        verbose_name_plural = 'Истории путей'
+        verbose_name_plural = 'Очереди поездок'
         unique_together = (('ride', 'address'),)
         ordering = 'order date_ended date_created'.split()
 
