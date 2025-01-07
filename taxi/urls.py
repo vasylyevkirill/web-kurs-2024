@@ -8,6 +8,7 @@ from taxi.views import (
     AddressViewSet,
     CarViewSet,
     DriverViewSet,
+    RideViewSet,
 )
 
 app_name = 'taxi'
@@ -19,6 +20,7 @@ router.register(r'districts', DistrictViewSet, basename='districts')
 router.register(r'cities', CityViewSet, basename='cities')
 router.register(r'cars', CarViewSet, basename='cars')
 router.register(r'drivers', DriverViewSet, basename='drivers')
+router.register(r'rides', RideViewSet, basename='rides')
 
 urlpatterns: list = [
     *router.urls,

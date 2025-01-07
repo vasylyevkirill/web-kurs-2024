@@ -114,7 +114,7 @@ class RideViewSet(viewsets.ModelViewSet):
     serializer_class = RideSerializer
 
     def get_object(self): 
-        if self.method in 'current '.split():
+        if self.action in 'current '.split():
             return self.get_queryset().get(date_ended__isnull=True)
         return super().obj_object()
 
@@ -134,7 +134,7 @@ class RideViewSet(viewsets.ModelViewSet):
     @action(methods=['POST'], detail=True)
     def accept(self, request):
         driver = None
-        if request and hasattr(request, "user") and request.user.is_authenticated() and Driver.objects.filter(request.user.id).count():
+        if request and hasattr(request, "user") and request.user.is_authenticated and Driver.objects.filter(request.user.id).count():
             driver = request.user
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)

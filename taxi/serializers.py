@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import serializers
 
 from taxi.models import (
@@ -5,6 +7,9 @@ from taxi.models import (
     Consumer, Ride, DriverRate, ConsumerRate, RideAddressesQueue,
     AbstractTaxiUser
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class CarSerializer(serializers.ModelSerializer):
@@ -18,6 +23,7 @@ class AddressSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Address
+        lookup_field = 'id'
         fields = 'id name street full_address'.split()
 
 
@@ -100,52 +106,74 @@ class DriverSerializer(DriverPreviewSerializer):
         fields = 'first_name last_name location current_car average_rating is_free profile_image_url'.split()
 
 
-class RideAddressesQueueSerializer(serializers.ModelSerializer):
+class InlineRideAddressesQueueSerializer(serializers.ModelSerializer):
+    full_address = serializers.CharField(read_only=True, source='address.__str__')
+    name = serializers.CharField(read_only=True, source='address.name')
+
+    date_created = serializers.DateTimeField(read_only=True)
     date_ended = serializers.DateTimeField(read_only=True)
     order = serializers.IntegerField(read_only=True)
-    ride = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = RideAddressesQueue
-        fields = 'ride address order date_created date_ended'.split()
+        fields = 'address order date_created date_ended full_address name'.split()
+
+
+class RideAddressesQueueSerializer(InlineRideAddressesQueueSerializer):
+    class Meta:
+        model = RideAddressesQueue
+        fields = 'ride address order date_created date_ended full_address name'.split()
 
 
 class RideSerializer(serializers.ModelSerializer):
-    consumer = ConsumerSerializer(read_only=True)
+    addresses = InlineRideAddressesQueueSerializer(many=True)
     driver = DriverPreviewSerializer(read_only=True)
-    adresses = RideAddressesQueueSerializer(many=True)
+    consumer = serializers.PrimaryKeyRelatedField(queryset=Consumer.objects.all(), required=False)
+    # consumer = ConsumerSerializer(read_only=True)
 
     class Meta:
         model = Ride
-        fields = 'consumer adresses driver date_created date_ended status price'.split()
+        fields = 'consumer addresses driver date_created date_ended status price'.split()
 
     def validate(self, data):
         data = super().validate(data)
+        request = self.context.get('request')
 
-        addresses = data.get('adresses', [])
-        if len(adresses) < 2:
-            raise serializers.ValidationError(f'At least two adresses on ride instance, \
-                but {len(adresses)} given.')
+        addresses = data.get('addresses')
+        if len(addresses) < 2:
+            raise serializers.ValidationError(f'At least two addresses but {len(addresses)} given.')
+        if not data.get('consumer'):
+            if not(request and hasattr(request, 'user') and request.user.is_authenticated and Consumer.objects.filter(user=request.user.id).count()):
+                raise serializers.ValidationError('User must be authenticated')
+
         return data
 
     def create(self, validated_data):
-        addresses = data.pop('adresses')
-
-        instance = super().create(validated_data)
-        instance = self.update(instance, {'adresses': addresses})
+        request = self.context.get('request')
+        consumer = Consumer.objects.get(user=request.user.id if request else validated_data.pop('consumer'))
+        addresses = validated_data.pop('addresses')
+        instance = Ride.objects.create(**{**validated_data, **{'consumer': consumer}})
+        instance = self.update(instance, {**validated_data, 'addresses': addresses})
 
         return instance
 
     def update(self, instance, validated_data):
         addresses_list = validated_data.pop('addresses')
-        instance.addresses.clear() 
+        instance.addresses.all().delete()
+
+        for address_data in addresses_list:
+            address_data['ride'] = instance.id
+            address = address_data.get('address')
+            address_data['address'] = address.id if isinstance(address, Address) else address
+
+            serializer = RideAddressesQueueSerializer(data=address_data, context=self.context)
+            serializer.is_valid(raise_exception=True)
+            address_instance = serializer.save()
+
+        for k, v in validated_data.items():
+            setattr(instance, k, v)
 
         instance.save()
-
-        for address in addresses_list:
-            address['ride'] = instance
-            address_instance = RideAddressesQueueSerializer.create(address)
-            instance.addresses.add(address_instance)
           
         return instance
 
