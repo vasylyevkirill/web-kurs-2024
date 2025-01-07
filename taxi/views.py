@@ -1,11 +1,12 @@
 from datetime import datetime
 
 from django.shortcuts import get_object_or_404
-from rest_framework import status
-from rest_framework import viewsets
+from django.contrib.auth import get_user_model
+from rest_framework import status, viewsets, serializers
 from rest_framework.filters import SearchFilter
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 
 from taxi.models import (
     Car, City, District, Street, Address, Driver,
@@ -21,9 +22,13 @@ from taxi.serializers import (
     AddressSerializer,
     CarSerializer,
     DriverSerializer,
-    RideSerializer,
+    RideSerializer, 
+    RideCreateSerializer,
     RideAddressesQueueSerializer,
 )
+
+
+User = get_user_model()
 
 
 class LargeResultsSetPagination(PageNumberPagination):
@@ -113,10 +118,35 @@ class RideViewSet(viewsets.ModelViewSet):
     queryset = Ride.objects.all()
     serializer_class = RideSerializer
 
+    def get_serializer_class(self) -> serializers.ModelSerializer:
+        if self.action in 'add_address ':
+            return RideAddressesQueueSerializer
+        if self.action in 'create update':
+            return RideCreateSerializer
+        return self.serializer_class
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if self.action not in 'list ':
+            context['ride'] = self.kwargs.get('pk', None)
+        return context
+
     def get_object(self): 
         if self.action in 'current '.split():
             return self.get_queryset().get(date_ended__isnull=True)
-        return super().obj_object()
+        return super().get_object()
+
+    def get_request_user(self) -> User | None:
+        request = self.request
+        if request and hasattr(request, "user") and request.user.is_authenticated:
+            return request.user
+        return None
+
+    def get_request_driver(self) -> Driver | None:
+        user = self.get_request_user()
+        if user and Driver.objects.filter(user=user.id).count():
+            return Driver.objects.get(user=user.id)
+        return None
 
     @action(methods=['GET'], detail=True)
     def current(self, request, *args, **kwargs):
@@ -132,11 +162,9 @@ class RideViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(methods=['POST'], detail=True)
-    def accept(self, request):
-        driver = None
-        if request and hasattr(request, "user") and request.user.is_authenticated and Driver.objects.filter(request.user.id).count():
-            driver = request.user
-        else:
+    def accept(self, request, *args, **kwargs):
+        driver = self.get_request_driver()
+        if not driver:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         instance = self.get_object()
@@ -147,23 +175,32 @@ class RideViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(methods=['POST'], detail=True)
-    def complete_address(self, request, pk, order=None, *args, **kwargs):
+    def complete_address(self, request, *args, **kwargs):
         instance = self.get_object()
-        
-        pending_addresses = instance.addresses.filter(date_ended__isnull=True)
-        response_status=status.HTTP_201_CREATED
-        if pending_addresses.count():
-            address_queue_instance.date_ended = datetime.now()
-            address_queue_instance.save()
+        driver = self.get_request_driver()
+
+        if not driver or instance.driver != driver:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+ 
+        response_status = status.HTTP_200_OK
+        if instance.pending_addresses.count():
+            instance.complete_address()
         else:
-            status = status.HTTP_208_ALREADY_REPORTED
+            response_status = status.HTTP_208_ALREADY_REPORTED
         
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=response_status)
 
     @action(methods=['POST'], detail=True)
-    def add_address(self, *args, **kwargs):
-        return
+    def add_address(self, *args, **kwargs): 
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            data={**self.request.data, **{'ride': instance.id}}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(methods=['POST'], detail=True)
     def change_address(self, *args, **kwargs):

@@ -120,20 +120,35 @@ class InlineRideAddressesQueueSerializer(serializers.ModelSerializer):
 
 
 class RideAddressesQueueSerializer(InlineRideAddressesQueueSerializer):
+    ride = serializers.PrimaryKeyRelatedField(queryset=Ride.objects.all(), required=False)
+
+    def is_valid(self, *, raise_exception: bool=True):
+        if not hasattr(self, 'inital_data'):
+            return super().is_valid(raise_exception=raise_exception)
+
+        ride = self.context.get('ride')
+        if 'ride' not in self.initial_data:
+            if ride is not None:
+                self.initial_data['ride'] = ride
+            else:
+                raise serializers.ValidationError('Ride field pk not provided in context or data kwarg')
+
+
+        return super().is_valid(raise_exception=raise_exception)
+
     class Meta:
         model = RideAddressesQueue
         fields = 'ride address order date_created date_ended full_address name'.split()
 
 
-class RideSerializer(serializers.ModelSerializer):
+class RideCreateSerializer(serializers.ModelSerializer):
     addresses = InlineRideAddressesQueueSerializer(many=True)
     driver = DriverPreviewSerializer(read_only=True)
     consumer = serializers.PrimaryKeyRelatedField(queryset=Consumer.objects.all(), required=False)
-    # consumer = ConsumerSerializer(read_only=True)
 
     class Meta:
         model = Ride
-        fields = 'consumer addresses driver date_created date_ended status price'.split()
+        fields = 'consumer addresses driver date_created date_ended status price id'.split()
 
     def validate(self, data):
         data = super().validate(data)
@@ -153,9 +168,7 @@ class RideSerializer(serializers.ModelSerializer):
         consumer = Consumer.objects.get(user=request.user.id if request else validated_data.pop('consumer'))
         addresses = validated_data.pop('addresses')
         instance = Ride.objects.create(**{**validated_data, **{'consumer': consumer}})
-        instance = self.update(instance, {**validated_data, 'addresses': addresses})
-
-        return instance
+        return self.update(instance, {**validated_data, 'addresses': addresses})
 
     def update(self, instance, validated_data):
         addresses_list = validated_data.pop('addresses')
@@ -176,6 +189,11 @@ class RideSerializer(serializers.ModelSerializer):
         instance.save()
           
         return instance
+
+class RideSerializer(RideCreateSerializer):
+    addresses = InlineRideAddressesQueueSerializer(many=True)
+    driver = DriverPreviewSerializer(read_only=True)
+    consumer = ConsumerSerializer(read_only=True)
 
 
 class DriverRateSerializer(serializers.ModelSerializer):

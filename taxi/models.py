@@ -207,6 +207,19 @@ class Ride(models.Model):
         return 1337
 
     @property
+    def pending_addresses(self):
+        return self.addresses.filter(date_ended__isnull=True)
+    
+    def complete_address(self) -> bool:
+        if self.pending_addresses.count():
+            address_queue_instance = self.pending_addresses.first()
+            address_queue_instance.date_ended = datetime.now()
+            address_queue_instance.save()
+        else:
+            return True
+        return False
+
+    @property
     def status(self) -> str:
         if not self.driver:
             return self.SEARCHING_DRIVER
@@ -291,12 +304,10 @@ class RideAddressesQueue(models.Model):
         return f'{self.order + 1}. {self.ride}'
 
     def save(self, *args, force_insert=False, **kwargs):
-        if self.date_ended and self.date_ended < self.date_created:
-            raise ValueError(__name__ + ' date_created error: date_created > date_ended')
         if force_insert or self.order is None:
             self.order = RideAddressesQueue.objects.filter(ride_id=self.ride_id).count()
         super().save(*args, **kwargs)
-        if RideAddressesQueue.objects.filter(ride=self.ride, date_ended__isnull=False).count():
+        if not self.ride.pending_addresses.count():
             self.ride.date_ended = datetime.now()
             self.ride.save()
 
