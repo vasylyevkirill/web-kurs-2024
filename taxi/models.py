@@ -103,7 +103,7 @@ def get_user_directory_path(self, instance, filename: str) -> str:
 
 
 class AbstractTaxiUser(models.Model):
-    history = HistoricalRecords()
+    history = HistoricalRecords(inherit=True)
     location = models.ForeignKey(District, on_delete=models.PROTECT, null=True)
     profile_image = models.ImageField(
         'Profile image',
@@ -120,14 +120,17 @@ class AbstractTaxiUser(models.Model):
 
     @property
     def average_rating(self) -> float:
-        return self.rates.aggregate(models.Sum('rate'))['rate__sum'] / self.rates.count()
+        rates_count = self.rates.count()
+        if not rates_count:
+            return 0
+        return self.rates.aggregate(models.Sum('rate'))['rate__sum'] / rates_count
 
     @property
-    def profile_image_url(self) -> str:
-        return self.profile_image.url
+    def profile_image_url(self) -> str | None:
+        return self.profile_image.url if self.profile_image else None
 
     def __str__(self):
-        return f'f{self.__metaclass__.verbose_name}: {self.user}'
+        return f'f{self.user}'
 
     class Meta:
         verbose_name='Пользователь'
@@ -205,7 +208,7 @@ class Ride(models.Model):
 
     @property
     def status(self) -> str:
-        if not driver:
+        if not self.driver:
             return self.SEARCHING_DRIVER
         elif not self.addresses.first().date_ended:
             return self.WAITING_DRIVER
@@ -268,16 +271,18 @@ class RideAddressesQueue(models.Model):
     ride = models.ForeignKey(
         Ride,
         on_delete=models.CASCADE,
+        null=False,
         blank=False,
-        related_name='adresses',
+        related_name='addresses',
     )
     address = models.ForeignKey(
         Address,
         on_delete=models.CASCADE,
+        null=False,
         blank=False,
         related_name='rides',
     )
-    order = models.PositiveIntegerField('Order', default=0)
+    order = models.PositiveIntegerField('Order', default=0, null=False, blank=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_ended = models.DateTimeField(default=None, null=True)
     history = HistoricalRecords()
@@ -288,9 +293,8 @@ class RideAddressesQueue(models.Model):
     def save(self, *args, force_insert=False, **kwargs):
         if self.date_ended and self.date_ended < self.date_created:
             raise ValueError(__name__ + ' date_created error: date_created > date_ended')
-        if force_insert:
-            default_order = RideAddressesQueue.objects.filter(ride=self.ride).count()
-            self.order = default_order
+        if force_insert or self.order is None:
+            self.order = RideAddressesQueue.objects.filter(ride_id=self.ride_id).count()
         super().save(*args, **kwargs)
         if RideAddressesQueue.objects.filter(ride=self.ride, date_ended__isnull=False).count():
             self.ride.date_ended = datetime.now()
