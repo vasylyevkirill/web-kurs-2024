@@ -31,6 +31,14 @@ services:
     depends_on:
       - db
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: ${SERVICE}_dev_mailhog
+    ports:
+      - 8025:8025 # web ui
+    expose:
+      - 1025
+
   celery:
     <<: *WEB
     container_name: ${SERVICE}_dev_celery

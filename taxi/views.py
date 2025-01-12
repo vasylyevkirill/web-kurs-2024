@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from rest_framework import status, viewsets, serializers
@@ -7,6 +8,7 @@ from rest_framework.filters import SearchFilter
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from django_filters import rest_framework as filters
 
 from taxi.models import (
     Car, City, District, Street, Address, Driver,
@@ -94,29 +96,35 @@ class DriverViewSet(viewsets.ModelViewSet):
     queryset = Driver.objects.all()
     serializer_class = DriverSerializer
     pagination_class = LargeResultsSetPagination
+    
 
     def get_queryset(self):
-        if self.action in 'list '.split():
-            return Driver.objects.available()
-        return self.queryset
+        self.kwargs.get('available')
+        if available is None:
+            return self.queryset
 
+
+class RideFilter(filters.FilterSet):
+    min_created = filters.IsoDateTimeFilter(field_name='date_created', lookup_expr='gte')
+    max_created = filters.IsoDateTimeFilter(field_name='date_created', lookup_expr='lte')
+    min_ended = filters.IsoDateTimeFilter(field_name='date_ended', lookup_expr='gte')
+    max_ended = filters.IsoDateTimeFilter(field_name='date_ended', lookup_expr='lte')
     
-    @action(methods=['GET'], detail=False)
-    def available(self, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    class Meta:
+        model = Ride
+        fields = ['date_created', 'date_ended']
 
 
 class RideViewSet(viewsets.ModelViewSet):
     queryset = Ride.objects.all()
     serializer_class = RideSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = RideFilter
+
+    def get_queryset(self):
+        if 'available' in self.kwargs:
+            return Ride.objects.available.all()
+        return self.queryset
 
     def get_serializer_class(self) -> serializers.ModelSerializer:
         if self.action in 'add_address ':
@@ -132,7 +140,7 @@ class RideViewSet(viewsets.ModelViewSet):
         return context
 
     def get_object(self): 
-        if self.action in 'current '.split():
+        if self.action in 'current accept complete_address add_address change_address'.split():
             return self.get_queryset().get(date_ended__isnull=True)
         return super().get_object()
 
@@ -148,16 +156,25 @@ class RideViewSet(viewsets.ModelViewSet):
             return Driver.objects.get(user=user.id)
         return None
 
-    @action(methods=['GET'], detail=True)
+    @action(methods=['GET'], detail=False)
+    def available(self, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data) 
+
+    @action(methods=['GET'], detail=False)
     def current(self, request, *args, **kwargs):
-        user = None
-        request = self.context.get("request")
-        if request and hasattr(request, "user"):
-            user = request.user
-        else:
+        user = self.get_request_user()
+        if not user:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        instance = self.get_object()
+        instance = get_object_or_404(Ride, Q(consumer=user.id) | Q(driver=user.id))
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 

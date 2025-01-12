@@ -1,0 +1,2008 @@
+openapi: 3.0.3
+info:
+  title: Taxi API
+  version: 1.0.0
+  description: DRF backend for taxi service project
+paths:
+  /:
+    get:
+      operationId: root_retrieve
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/addresses/:
+    get:
+      operationId: api_addresses_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAddressList'
+          description: ''
+    post:
+      operationId: api_addresses_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Address'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Address'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Address'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+  /api/addresses/{id}/:
+    get:
+      operationId: api_addresses_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this address.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    put:
+      operationId: api_addresses_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this address.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Address'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Address'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Address'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    patch:
+      operationId: api_addresses_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this address.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAddress'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAddress'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAddress'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    delete:
+      operationId: api_addresses_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this address.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/cars/:
+    get:
+      operationId: api_cars_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCarList'
+          description: ''
+    post:
+      operationId: api_cars_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Car'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Car'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Car'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+          description: ''
+  /api/cars/{number}/:
+    get:
+      operationId: api_cars_retrieve
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: string
+          title: Car Number
+        description: A unique value identifying this car.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+          description: ''
+    put:
+      operationId: api_cars_update
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: string
+          title: Car Number
+        description: A unique value identifying this car.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Car'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Car'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Car'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+          description: ''
+    patch:
+      operationId: api_cars_partial_update
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: string
+          title: Car Number
+        description: A unique value identifying this car.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCar'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCar'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCar'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+          description: ''
+    delete:
+      operationId: api_cars_destroy
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: string
+          title: Car Number
+        description: A unique value identifying this car.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/cities/:
+    get:
+      operationId: api_cities_list
+      parameters:
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CityPreview'
+          description: ''
+    post:
+      operationId: api_cities_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/City'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/City'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/City'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/City'
+          description: ''
+  /api/cities/{name}/:
+    get:
+      operationId: api_cities_retrieve
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+          title: City
+        description: A unique value identifying this city.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/City'
+          description: ''
+    put:
+      operationId: api_cities_update
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+          title: City
+        description: A unique value identifying this city.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/City'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/City'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/City'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/City'
+          description: ''
+    patch:
+      operationId: api_cities_partial_update
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+          title: City
+        description: A unique value identifying this city.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCity'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCity'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCity'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/City'
+          description: ''
+    delete:
+      operationId: api_cities_destroy
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+          title: City
+        description: A unique value identifying this city.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/districts/:
+    get:
+      operationId: api_districts_list
+      parameters:
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DistrictPreview'
+          description: ''
+    post:
+      operationId: api_districts_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/District'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/District'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/District'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/District'
+          description: ''
+  /api/districts/{id}/:
+    get:
+      operationId: api_districts_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this district.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/District'
+          description: ''
+    put:
+      operationId: api_districts_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this district.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/District'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/District'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/District'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/District'
+          description: ''
+    patch:
+      operationId: api_districts_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this district.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDistrict'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDistrict'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDistrict'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/District'
+          description: ''
+    delete:
+      operationId: api_districts_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this district.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/drivers/:
+    get:
+      operationId: api_drivers_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDriverList'
+          description: ''
+    post:
+      operationId: api_drivers_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Driver'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Driver'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Driver'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+          description: ''
+  /api/drivers/{user}/:
+    get:
+      operationId: api_drivers_retrieve
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: integer
+        description: A unique value identifying this Водитель.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+          description: ''
+    put:
+      operationId: api_drivers_update
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: integer
+        description: A unique value identifying this Водитель.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Driver'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Driver'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Driver'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+          description: ''
+    patch:
+      operationId: api_drivers_partial_update
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: integer
+        description: A unique value identifying this Водитель.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDriver'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDriver'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDriver'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+          description: ''
+    delete:
+      operationId: api_drivers_destroy
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: integer
+        description: A unique value identifying this Водитель.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/rides/:
+    get:
+      operationId: api_rides_list
+      parameters:
+      - in: query
+        name: date_created
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_ended
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: max_created
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: max_ended
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: min_created
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: min_ended
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ride'
+          description: ''
+    post:
+      operationId: api_rides_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RideCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RideCreate'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RideCreate'
+          description: ''
+  /api/rides/{id}/:
+    get:
+      operationId: api_rides_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ride.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+    put:
+      operationId: api_rides_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ride.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RideCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RideCreate'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RideCreate'
+          description: ''
+    patch:
+      operationId: api_rides_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ride.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRide'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRide'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRide'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+    delete:
+      operationId: api_rides_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ride.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/rides/{id}/accept/:
+    post:
+      operationId: api_rides_accept_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ride.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ride'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Ride'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Ride'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /api/rides/{id}/add_address/:
+    post:
+      operationId: api_rides_add_address_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ride.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideAddressesQueue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RideAddressesQueue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RideAddressesQueue'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RideAddressesQueue'
+          description: ''
+  /api/rides/{id}/change_address/:
+    post:
+      operationId: api_rides_change_address_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ride.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ride'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Ride'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Ride'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /api/rides/{id}/complete_address/:
+    post:
+      operationId: api_rides_complete_address_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ride.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ride'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Ride'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Ride'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /api/rides/available/:
+    get:
+      operationId: api_rides_available_retrieve
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /api/rides/current/:
+    get:
+      operationId: api_rides_current_retrieve
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /api/streets/:
+    get:
+      operationId: api_streets_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStreetPreviewList'
+          description: ''
+    post:
+      operationId: api_streets_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Street'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Street'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Street'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Street'
+          description: ''
+  /api/streets/{id}/:
+    get:
+      operationId: api_streets_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this street.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Street'
+          description: ''
+    put:
+      operationId: api_streets_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this street.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Street'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Street'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Street'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Street'
+          description: ''
+    patch:
+      operationId: api_streets_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this street.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStreet'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStreet'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStreet'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Street'
+          description: ''
+    delete:
+      operationId: api_streets_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this street.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    Address:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Address name
+          maxLength: 10
+        street:
+          type: integer
+        full_address:
+          type: string
+          readOnly: true
+      required:
+      - full_address
+      - id
+      - name
+      - street
+    Car:
+      type: object
+      properties:
+        number:
+          type: string
+          title: Car Number
+          maxLength: 10
+        color:
+          type: string
+          maxLength: 63
+        make:
+          type: string
+          maxLength: 100
+        series:
+          type: string
+          maxLength: 100
+        is_ready:
+          type: boolean
+          title: Ready to use
+        comfort_class:
+          $ref: '#/components/schemas/ComfortClassEnum'
+      required:
+      - color
+      - comfort_class
+      - make
+      - number
+      - series
+    City:
+      type: object
+      properties:
+        name:
+          type: string
+          title: City
+          maxLength: 511
+        districts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DistrictPreview'
+          readOnly: true
+      required:
+      - districts
+      - name
+    CityPreview:
+      type: object
+      properties:
+        name:
+          type: string
+          title: City
+          maxLength: 511
+      required:
+      - name
+    ComfortClassEnum:
+      enum:
+      - comfort_plus
+      - business
+      - together
+      - comfort
+      - econom
+      type: string
+      description: |-
+        * `comfort_plus` - Comfort Plus
+        * `business` - Business
+        * `together` - Together
+        * `comfort` - Comfort
+        * `econom` - Econom
+    Consumer:
+      type: object
+      properties:
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        location:
+          $ref: '#/components/schemas/DistrictPreview'
+        average_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+          readOnly: true
+        profile_image_url:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - average_rating
+      - first_name
+      - last_name
+      - location
+      - profile_image_url
+    District:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: District
+          maxLength: 511
+        streets:
+          type: array
+          items:
+            $ref: '#/components/schemas/StreetPreview'
+          readOnly: true
+        full_address:
+          type: string
+          readOnly: true
+      required:
+      - full_address
+      - id
+      - name
+      - streets
+    DistrictPreview:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: District
+          maxLength: 511
+        full_address:
+          type: string
+          readOnly: true
+      required:
+      - full_address
+      - id
+      - name
+    Driver:
+      type: object
+      properties:
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        location:
+          $ref: '#/components/schemas/DistrictPreview'
+        current_car:
+          $ref: '#/components/schemas/Car'
+        average_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+          readOnly: true
+        is_free:
+          type: boolean
+          readOnly: true
+        profile_image_url:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - average_rating
+      - current_car
+      - first_name
+      - is_free
+      - last_name
+      - location
+      - profile_image_url
+    DriverPreview:
+      type: object
+      properties:
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        location:
+          $ref: '#/components/schemas/DistrictPreview'
+        average_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+          readOnly: true
+        is_free:
+          type: boolean
+          readOnly: true
+        profile_image_url:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - average_rating
+      - first_name
+      - is_free
+      - last_name
+      - location
+      - profile_image_url
+    InlineRideAddressesQueue:
+      type: object
+      properties:
+        address:
+          type: integer
+        order:
+          type: integer
+          readOnly: true
+        date_created:
+          type: string
+          format: date-time
+          readOnly: true
+        date_ended:
+          type: string
+          format: date-time
+          readOnly: true
+        full_address:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+      required:
+      - address
+      - date_created
+      - date_ended
+      - full_address
+      - name
+      - order
+    PaginatedAddressList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+    PaginatedCarList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Car'
+    PaginatedDriverList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Driver'
+    PaginatedStreetPreviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StreetPreview'
+    PatchedAddress:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Address name
+          maxLength: 10
+        street:
+          type: integer
+        full_address:
+          type: string
+          readOnly: true
+    PatchedCar:
+      type: object
+      properties:
+        number:
+          type: string
+          title: Car Number
+          maxLength: 10
+        color:
+          type: string
+          maxLength: 63
+        make:
+          type: string
+          maxLength: 100
+        series:
+          type: string
+          maxLength: 100
+        is_ready:
+          type: boolean
+          title: Ready to use
+        comfort_class:
+          $ref: '#/components/schemas/ComfortClassEnum'
+    PatchedCity:
+      type: object
+      properties:
+        name:
+          type: string
+          title: City
+          maxLength: 511
+        districts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DistrictPreview'
+          readOnly: true
+    PatchedDistrict:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: District
+          maxLength: 511
+        streets:
+          type: array
+          items:
+            $ref: '#/components/schemas/StreetPreview'
+          readOnly: true
+        full_address:
+          type: string
+          readOnly: true
+    PatchedDriver:
+      type: object
+      properties:
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        location:
+          $ref: '#/components/schemas/DistrictPreview'
+        current_car:
+          $ref: '#/components/schemas/Car'
+        average_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+          readOnly: true
+        is_free:
+          type: boolean
+          readOnly: true
+        profile_image_url:
+          type: string
+          nullable: true
+          readOnly: true
+    PatchedRide:
+      type: object
+      properties:
+        consumer:
+          allOf:
+          - $ref: '#/components/schemas/Consumer'
+          readOnly: true
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/InlineRideAddressesQueue'
+        driver:
+          allOf:
+          - $ref: '#/components/schemas/DriverPreview'
+          readOnly: true
+        date_created:
+          type: string
+          format: date-time
+          readOnly: true
+        date_ended:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          readOnly: true
+        price:
+          type: number
+          format: double
+          readOnly: true
+        id:
+          type: integer
+          readOnly: true
+    PatchedStreet:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Street name
+          maxLength: 511
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+          readOnly: true
+        full_address:
+          type: string
+          readOnly: true
+    Ride:
+      type: object
+      properties:
+        consumer:
+          allOf:
+          - $ref: '#/components/schemas/Consumer'
+          readOnly: true
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/InlineRideAddressesQueue'
+        driver:
+          allOf:
+          - $ref: '#/components/schemas/DriverPreview'
+          readOnly: true
+        date_created:
+          type: string
+          format: date-time
+          readOnly: true
+        date_ended:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          readOnly: true
+        price:
+          type: number
+          format: double
+          readOnly: true
+        id:
+          type: integer
+          readOnly: true
+      required:
+      - addresses
+      - consumer
+      - date_created
+      - driver
+      - id
+      - price
+      - status
+    RideAddressesQueue:
+      type: object
+      properties:
+        ride:
+          type: integer
+        address:
+          type: integer
+        order:
+          type: integer
+          readOnly: true
+        date_created:
+          type: string
+          format: date-time
+          readOnly: true
+        date_ended:
+          type: string
+          format: date-time
+          readOnly: true
+        full_address:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+      required:
+      - address
+      - date_created
+      - date_ended
+      - full_address
+      - name
+      - order
+    RideCreate:
+      type: object
+      properties:
+        consumer:
+          type: integer
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/InlineRideAddressesQueue'
+        driver:
+          allOf:
+          - $ref: '#/components/schemas/DriverPreview'
+          readOnly: true
+        date_created:
+          type: string
+          format: date-time
+          readOnly: true
+        date_ended:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          readOnly: true
+        price:
+          type: number
+          format: double
+          readOnly: true
+        id:
+          type: integer
+          readOnly: true
+      required:
+      - addresses
+      - date_created
+      - driver
+      - id
+      - price
+      - status
+    Street:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Street name
+          maxLength: 511
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+          readOnly: true
+        full_address:
+          type: string
+          readOnly: true
+      required:
+      - addresses
+      - full_address
+      - id
+      - name
+    StreetPreview:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Street name
+          maxLength: 511
+        district:
+          type: integer
+        full_address:
+          type: string
+          readOnly: true
+      required:
+      - district
+      - full_address
+      - id
+      - name
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

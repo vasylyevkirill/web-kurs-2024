@@ -149,7 +149,7 @@ class RideTestCase(TestCase):
             }],
             'status': 'In progress',
             'date_ended': None,
-            'price': 1337,
+            'price': 1337.0,
         }
 
 
@@ -208,7 +208,7 @@ class RideTestCase(TestCase):
             }],
             'status': 'Wating driver',
             'date_ended': None,
-            'price': 1337,
+            'price': 1337.0,
         }
 
     def test_create_ride_api_request(self):
@@ -252,5 +252,5 @@ class RideTestCase(TestCase):
             'driver': None,
             'status': 'Searching driver',
             'date_ended': None,
-            'price': 1337,
+            'price': 1337.0,
         }

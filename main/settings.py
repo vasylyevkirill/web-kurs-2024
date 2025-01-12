@@ -1,5 +1,9 @@
 import os
+import pytz
+from datetime import datetime
 from pathlib import Path
+
+from import_export.formats.base_formats import CSV, XLSX, JSON
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,6 +37,10 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'rest_framework',
     'simple_history',
+    'django_filters',
+    'import_export',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
 
     'polls',
     'taxi',
@@ -49,6 +57,10 @@ MIDDLEWARE = [
     'simple_history.middleware.HistoryRequestMiddleware',
     'allauth.account.middleware.AccountMiddleware',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
 
 ROOT_URLCONF = 'main.urls'
 
@@ -121,6 +133,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -173,3 +186,28 @@ CLIENT_ID='1074940327306-76pln1555mf0d94g8sk0kls9r3m0a50p.apps.googleusercontent
 CLIENT_SECRET='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'
 
 ACCOUNT_DEFAULT_HTTP_PROTOCOL='http'
+
+# Swagger settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Taxi API',
+    'DESCRIPTION': 'DRF backend for taxi service project',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+}
+
+# mailhog settings
+DEFAULT_FROM_EMAIL = os.getenv("DJANGO_DEFAULT_FROM_EMAIL", "webmaster@localhost")
+EMAIL_HOST = os.getenv("DJANGO_EMAIL_HOST")
+EMAIL_HOST_PASSWORD = os.getenv("DJANGO_EMAIL_HOST_PASSWORD")
+EMAIL_HOST_USER = os.getenv("DJANGO_EMAIL_HOST_USER")
+EMAIL_PORT = os.getenv("DJANGO_EMAIL_PORT")
+EMAIL_USE_TLS = os.getenv("DJANGO_EMAIL_USE_TLS")
+
+# django-import-export settings
+EXPORT_FORMATS = [CSV, XLSX, JSON]
+
+# DAY FOR CANCELED TAXI ORDER DATE_ENDED
+FALLBACK_DATETIME = datetime.min.replace(tzinfo=pytz.UTC)

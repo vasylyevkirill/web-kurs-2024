@@ -1,8 +1,10 @@
 from datetime import datetime
 
+
 from django.db import models
 from django.conf import settings
 from django.core import validators
+from django.db.models.query import QuerySet
 from simple_history.models import HistoricalRecords
 
 
@@ -139,11 +141,14 @@ class AbstractTaxiUser(models.Model):
 
 class DriverManager(models.Manager):
     def available(self): 
-        return self.objects.filter(rides__date_ended__isnull=False
-            ).annotate(num_b=Count('b')).filter(num_b__gt=0
-            ).filter(current_car_isnull=True).count() > 0
-    def free(self):
-        return self.objects.all()
+        return self.filter(
+            rides__date_ended__isnull=False,
+            current_car__isnull=False,
+        )
+    def non_available(self):
+        return self.filter(
+            Q(rides__date_ended__isnull=True) | Q(current_car__isnull=True)
+        )
 
 
 class Driver(AbstractTaxiUser):
@@ -171,12 +176,39 @@ class Consumer(AbstractTaxiUser):
         verbose_name = 'Пассажир'
  
 
+class RideManager(models.Manager):
+    def canceled(self) -> QuerySet:
+        return self.objects.filter(
+            date_ended=settings.FALLBACK_DATETIME,
+        )
+
+    def non_canceled(self) -> QuerySet:
+        return self.objects.filter(
+            ~Q(date_ended=settings.FALLBACK_DATETIME)
+        )
+
+    def available(self) -> QuerySet:
+        return self.objects.filter(
+            driver__isnull=True,
+            date_ended__isnull=True,
+        )
+
+    def non_available(self) -> QuerySet:
+        return self.objects.filter(
+            driver__isnull=False,
+            date_ended__isnull=False,
+        )
+
+
 class Ride(models.Model):
     # Status list
     SEARCHING_DRIVER = 'Searching driver'
     WAITING_DRIVER = 'Wating driver'
     IN_PROGRESS = 'In progress'
     COMPLETED = 'Completed'
+    CANCELED = 'Canceled'
+
+    objects = RideManager()
     
     # Model fields declaration
     consumer = models.ForeignKey(
@@ -194,7 +226,7 @@ class Ride(models.Model):
     date_ended = models.DateTimeField(default=None, null=True)
     history = HistoricalRecords()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{self.id} {self.driver} {self.consumer} Price: {self.price} at: {self.date_created}'
 
     class Meta:
@@ -203,12 +235,17 @@ class Ride(models.Model):
         ordering = 'driver date_created '.split()
  
     @property
-    def price(self) -> int:
-        return 1337
+    def price(self) -> float:
+        return 1337.0
 
     @property
-    def pending_addresses(self):
+    def pending_addresses(self) -> QuerySet:
         return self.addresses.filter(date_ended__isnull=True)
+
+    def cancel(self) -> float: # Returns cost of canceling
+        self.date_ended = settings.FALLBACK_DATETIME
+        self.save()
+        return self.price
     
     def complete_address(self) -> bool:
         if self.pending_addresses.count():
@@ -221,7 +258,9 @@ class Ride(models.Model):
 
     @property
     def status(self) -> str:
-        if not self.driver:
+        if self.date_ended == settings.FALLBACK_DATETIME:
+            return self.CANCELED
+        elif not self.driver:
             return self.SEARCHING_DRIVER
         elif not self.addresses.first().date_ended:
             return self.WAITING_DRIVER
@@ -240,7 +279,7 @@ class Rate(models.Model):
     rate = models.PositiveIntegerField('Rate',  validators=(validators.MaxValueValidator(5),))
     date_created = models.DateTimeField('Date created', auto_now_add=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{self.target} Rate: {self.rate} Author: {self.author}'
 
     class Meta:
@@ -300,7 +339,7 @@ class RideAddressesQueue(models.Model):
     date_ended = models.DateTimeField(default=None, null=True)
     history = HistoricalRecords()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{self.order + 1}. {self.ride}'
 
     def save(self, *args, force_insert=False, **kwargs):
