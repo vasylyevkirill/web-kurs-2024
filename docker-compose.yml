@@ -19,13 +19,13 @@ services:
     container_name: ${SERVICE}_dev_backend
     env_file: .env
     build:
-      context: .
+      context: ./backend/
       dockerfile: dev.Dockerfile
     environment:
       DJANGO_DEBUG: 1
       DATABASE_PROVIDER: mysql
     volumes:
-      - ./:/app
+      - ./backend:/app
     ports:
       - "127.0.0.1:${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
