@@ -14,6 +14,17 @@ services:
       - "127.0.0.1:${DATABASE_PORT}:${DATABASE_PORT}"
     command: -p ${DATABASE_PORT}
 
+  frontend:
+    container_name: ${SERVICE}_dev_frontend
+    env_file: .env
+    build:
+      context: ./frontend/
+      dockerfile: dev.Dockerfile
+    volumes:
+      - ./frontend:/app
+    ports:
+      - ${FRONTEND_PORT}:${FRONTEND_PORT}
+
   backend:
     &WEB
     container_name: ${SERVICE}_dev_backend

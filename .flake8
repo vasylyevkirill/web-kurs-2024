@@ -2,6 +2,7 @@
 exclude =
     migrations
 	media
+    env
 
 max-line-length = 120
 
