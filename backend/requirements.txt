@@ -3,6 +3,9 @@ asgiref==3.8.1
 attrs==24.3.0
 billiard==4.2.1
 celery==5.4.0
+django-redis==5.4.0
+django-celery-beat==2.7.0
+django-celery-results==2.5.1 
 certifi==2024.8.30
 cffi==1.17.1
 charset-normalizer==3.4.0

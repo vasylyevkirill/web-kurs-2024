@@ -60,6 +60,15 @@ services:
       - db
       - redis
 
+  celery_beat:
+    <<: *WEB
+    container_name: ${SERVICE}_dev_celerybeat
+    ports: []
+    command:  >
+      bash -c 'celery -A main beat -l info'
+    depends_on:
+      - redis
+
   redis:
     image: redis:latest
     container_name: ${SERVICE}_dev_redis

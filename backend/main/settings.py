@@ -1,14 +1,13 @@
 import os
 import pytz
-from datetime import datetime
 from pathlib import Path
+from datetime import datetime
+from celery.schedules import crontab
 
 from import_export.formats.base_formats import CSV, XLSX, JSON
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -26,7 +25,6 @@ if DEBUG:
 
 ALLOWED_HOSTS = ['backend', 'localhost', '127.0.0.1', '0.0.0.0', FRONTEND_ROOT]
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -42,6 +40,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'rest_framework',
+    'django_celery_beat',
+    'django_celery_results',
     'simple_history',
     'django_filters',
     'import_export',
@@ -170,6 +170,32 @@ CELERYD_MAX_TASKS_PER_CHILD = 5
 # Number of CPU cores.
 CELERYD_CONCURRENCY = 2
 
+CELERY_BEAT_SCHEDULE = {
+    'per_minute_newsletter': {
+        'task': 'taxi.tasks.send_per_minute_newsletter',
+        'schedule': crontab(),
+    },
+    'new_year_newsletter': {
+        'task': 'taxi.tasks.send_new_year_newsletter',
+        'schedule': crontab(hour=0, minute=0, day_of_month='1', month_of_year='1'),
+    },
+}
+
+
+CELERY_IMPORTS = [
+    'taxi.tasks',
+]
+
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': CELERY_BROKER_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
 
 # GOOGLE ALLAUTH
 SOCIALACCOUNT_PROVIDERS = {
@@ -190,7 +216,7 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
-SITE_ID = 2
+# SITE_ID = 2
 
 CLIENT_ID='1074940327306-76pln1555mf0d94g8sk0kls9r3m0a50p.apps.googleusercontent.com'
 CLIENT_SECRET='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'
@@ -209,15 +235,18 @@ SPECTACULAR_SETTINGS = {
 }
 
 # mailhog settings
-DEFAULT_FROM_EMAIL = os.getenv("DJANGO_DEFAULT_FROM_EMAIL", "webmaster@localhost")
-EMAIL_HOST = os.getenv("DJANGO_EMAIL_HOST")
-EMAIL_HOST_PASSWORD = os.getenv("DJANGO_EMAIL_HOST_PASSWORD")
-EMAIL_HOST_USER = os.getenv("DJANGO_EMAIL_HOST_USER")
-EMAIL_PORT = os.getenv("DJANGO_EMAIL_PORT")
-EMAIL_USE_TLS = os.getenv("DJANGO_EMAIL_USE_TLS")
+DEFAULT_FROM_EMAIL = os.getenv('DJANGO_DEFAULT_FROM_EMAIL', 'webmaster@localhost')
+EMAIL_HOST = os.getenv('DJANGO_EMAIL_HOST')
+EMAIL_HOST_PASSWORD = os.getenv('DJANGO_EMAIL_HOST_PASSWORD')
+EMAIL_HOST_USER = os.getenv('DJANGO_EMAIL_HOST_USER')
+EMAIL_PORT = os.getenv('DJANGO_EMAIL_PORT')
+EMAIL_USE_TLS = os.getenv('DJANGO_EMAIL_USE_TLS')
 
 # django-import-export settings
 EXPORT_FORMATS = [CSV, XLSX, JSON]
 
 # DAY FOR CANCELED TAXI ORDER DATE_ENDED
 FALLBACK_DATETIME = datetime.min.replace(tzinfo=pytz.UTC)
+
+LOGIN_REDIRECT_URL = 'http://localhost:8002/api/' #FRONTEND_ROOT if FRONTEND_ROOT else 
+LOGOUT_REDIRECT_URL = LOGIN_REDIRECT_URL

@@ -202,10 +202,10 @@ class RideSerializer(RideCreateSerializer):
 class DriverRateSerializer(serializers.ModelSerializer):
     class Meta:
         model = DriverRate
-        fields = 'target author ride comment rate date_created'.split()
+        fields = 'ride comment rate date_created'.split()
 
 
 class ConsumerRateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConsumerRate
-        fields = 'target author ride comment rate date_created'.split()
+        fields = 'ride comment rate date_created'.split()

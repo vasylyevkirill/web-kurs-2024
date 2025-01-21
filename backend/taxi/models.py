@@ -104,6 +104,34 @@ def get_user_directory_path(self, instance, filename: str) -> str:
     return f'profile/{instance.user.username}/{filename}'
 
 
+class Rate(models.Model):
+    ride = models.ForeignKey(
+        'Ride',
+        on_delete=models.PROTECT,
+    )
+    comment = models.TextField('Comment', blank=False, null=False)
+    rate = models.PositiveIntegerField('Rate',  validators=(validators.MaxValueValidator(5),))
+    date_created = models.DateTimeField('Date created', auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f'{self.target} Rate: {self.rate} Author: {self.author}'
+
+    class Meta:
+        abstract=True
+        verbose_name_plural = 'Оценки'
+        ordering = 'target date_created'.split()
+
+
+class DriverRate(Rate):
+    class Meta:
+        verbose_name_plural = 'Оценки водителей'
+
+
+class ConsumerRate(Rate):
+    class Meta:
+        verbose_name_plural = 'Оценки пассажиров'
+
+
 class AbstractTaxiUser(models.Model):
     history = HistoricalRecords(inherit=True)
     location = models.ForeignKey(District, on_delete=models.PROTECT, null=True)
@@ -119,6 +147,18 @@ class AbstractTaxiUser(models.Model):
         on_delete=models.CASCADE,
         primary_key=True,
     )
+
+    @property
+    def rates(self) -> QuerySet:
+        condition = None
+        if self.RATE_CLASS is ConsumerRate:
+            condition = Q(ride__consumer=self)
+        elif self.RATE_CLASS is DriverRate: 
+            condition = Q(ride__driver=self)
+        else:
+            raise RuntimeError(__name__, 'not specified rate class')
+            
+        return self.RATE_CLASS.objects.filter(condition)
 
     @property
     def average_rating(self) -> float:
@@ -152,6 +192,7 @@ class DriverManager(models.Manager):
 
 
 class Driver(AbstractTaxiUser):
+    RATE_CLASS = DriverRate
     objects = DriverManager()
 
     current_car = models.OneToOneField(
@@ -171,6 +212,7 @@ class Driver(AbstractTaxiUser):
 
 
 class Consumer(AbstractTaxiUser):
+    RATE_CLASS = ConsumerRate
     class Meta:
         verbose_name_plural = 'Пассажиры'
         verbose_name = 'Пассажир'
@@ -190,7 +232,7 @@ class RideManager(models.Manager):
         return self.filter(~self.CANCELED_CONDITION, self.AVAILABLE_CONDITION)
 
     def non_available(self) -> QuerySet:
-        return self.exclude(~self.CANCELED_CONDITION, self.AVAILABLE_CONDITION)
+        return self.exclude(~self.CANCELED_CONDITION, ~self.AVAILABLE_CONDITION)
 
 
 class Ride(models.Model):
@@ -266,55 +308,6 @@ class Ride(models.Model):
             return self.IN_PROGRESS
         else:
             return self.COMPLETED
-
-
-class Rate(models.Model):
-    ride = models.ForeignKey(
-        Ride,
-        on_delete=models.PROTECT,
-    )
-    comment = models.TextField('Comment', blank=False, null=False)
-    rate = models.PositiveIntegerField('Rate',  validators=(validators.MaxValueValidator(5),))
-    date_created = models.DateTimeField('Date created', auto_now_add=True)
-
-    def __str__(self) -> str:
-        return f'{self.target} Rate: {self.rate} Author: {self.author}'
-
-    class Meta:
-        abstract=True
-        verbose_name_plural = 'Оценки'
-        ordering = 'target date_created'.split()
-
-
-class DriverRate(Rate):
-    author = models.ForeignKey(
-        Consumer,
-        on_delete=models.PROTECT,
-        related_name='rates_authored'
-    )
-    target = models.ForeignKey(
-        Driver,
-        on_delete=models.PROTECT,
-        related_name='rates'
-    )
-
-    class Meta:
-        verbose_name_plural = 'Оценки водителей'
-
-
-class ConsumerRate(Rate):
-    target = models.ForeignKey(
-        Consumer,
-        on_delete=models.PROTECT,
-        related_name='rates'
-    )
-    author = models.ForeignKey(
-        Driver,
-        on_delete=models.PROTECT,
-        related_name='rates_authored'
-    )
-    class Meta:
-        verbose_name_plural = 'Оценки пассажиров'
 
 
 class RideAddressesQueue(models.Model):

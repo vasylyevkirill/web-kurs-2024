@@ -1,0 +1,10 @@
+<h2>Здесь должна быть форма</h2>
+
+{% block rides-rate %}
+<form method="post">
+    {% csrf_token %}
+    {{ form }}
+    <button type=submit>Отправить</button>
+</form>
+{% endblock %}
+

@@ -1,8 +1,10 @@
 from datetime import datetime
 
 from django.db.models import Q
+from django.urls import reverse
 from django.conf import settings
-from django.shortcuts import get_object_or_404, render
+from django.core.cache import cache
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth import get_user_model
 from rest_framework import status, viewsets, serializers
 from rest_framework.filters import SearchFilter
@@ -29,15 +31,66 @@ from taxi.serializers import (
     RideCreateSerializer,
     RideAddressesQueueSerializer,
 )
+from taxi.forms import DriverRateForm, ConsumerRateForm
 
 
 User = get_user_model()
+
+
+def get_request_user(request) -> User | None:
+    if request and hasattr(request, "user") and request.user.is_authenticated:
+        return request.user
+    return None
+
+
+def get_request_driver(request) -> Driver | None:
+    user = get_request_user(request)
+    if user and Driver.objects.filter(user=user.id).count():
+        return Driver.objects.get(user=user.id)
+    return None
+
+
+def get_request_consumer(request) -> Consumer | None:
+    user = get_request_user(request)
+    if user and Consumer.objects.filter(user=user.id).count():
+        return Consumer.objects.get(user=user.id)
+    return None
 
 
 def available_rides_view(request):
     latest_rides = Ride.objects.available().order_by('-date_created')[:5]
     context = {'rides_list': latest_rides, 'timezone': settings.TIME_ZONE}
     return render(request, 'rides-list.html', context)
+
+
+def get_create_rate_form_class(request) -> DriverRateForm | ConsumerRateForm:
+    if get_request_driver(request):
+        return DriverRateForm
+    elif get_request_consumer(request):
+        return ConsumerRateForm
+    raise ValueError(
+        __name__,
+        'User must be authenticated and signed as driver or consumer'
+    )
+    
+
+def create_rate_view(request):
+    form_class = get_create_rate_form_class(request)
+
+    if request.method == 'POST':
+        form = form_class(data=request.POST)
+        if form.is_valid():
+            new_rate = form.save()
+            ride = new_rate.ride
+            return redirect(reverse('taxi:rides-detail', args=[ride.pk]))
+    else:
+        form = form_class(data=request.GET)
+    return render(request,
+        'create-rate.html',
+        {
+            'form': form
+        }
+    )
 
 
 class LargeResultsSetPagination(PageNumberPagination):
@@ -84,11 +137,20 @@ class StreetViewSet(viewsets.ModelViewSet):
 
 
 class AddressViewSet(viewsets.ModelViewSet):
-    queryset = Address.objects.all().select_related('street')
+    queryset = Address.objects.select_related('street', 'street__district', 'street__district__city').all()
     serializer_class = AddressSerializer
     pagination_class = LargeResultsSetPagination
     filter_backends = [SearchFilter]
     search_fields = ['name', 'full_address']
+
+    def get_queryset(self):
+        addresses_list = cache.get('addresses_list')
+
+        if not addresses_list:
+            addresses_list = self.queryset
+            cache.set('addresses_list', addresses_list, timeout=60 * 15)
+
+        return addresses_list
 
 
 class CarViewSet(viewsets.ModelViewSet):
@@ -104,9 +166,10 @@ class DriverViewSet(viewsets.ModelViewSet):
     
 
     def get_queryset(self):
-        self.kwargs.get('available')
+        available = self.kwargs.get('available')
         if available is None:
             return self.queryset
+        return
 
 
 class RideFilter(filters.FilterSet):
@@ -149,18 +212,6 @@ class RideViewSet(viewsets.ModelViewSet):
             return self.get_queryset().get(date_ended__isnull=True)
         return super().get_object()
 
-    def get_request_user(self) -> User | None:
-        request = self.request
-        if request and hasattr(request, "user") and request.user.is_authenticated:
-            return request.user
-        return None
-
-    def get_request_driver(self) -> Driver | None:
-        user = self.get_request_user()
-        if user and Driver.objects.filter(user=user.id).count():
-            return Driver.objects.get(user=user.id)
-        return None
-
     @action(methods=['GET'], detail=False)
     def available(self, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -175,7 +226,7 @@ class RideViewSet(viewsets.ModelViewSet):
 
     @action(methods=['GET'], detail=False)
     def current(self, request, *args, **kwargs):
-        user = self.get_request_user()
+        user = get_request_user(request)
         if not user:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
@@ -185,7 +236,7 @@ class RideViewSet(viewsets.ModelViewSet):
 
     @action(methods=['POST'], detail=True)
     def accept(self, request, *args, **kwargs):
-        driver = self.get_request_driver()
+        driver = get_request_driver(request)
         if not driver:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
@@ -199,7 +250,7 @@ class RideViewSet(viewsets.ModelViewSet):
     @action(methods=['POST'], detail=True)
     def complete_address(self, request, *args, **kwargs):
         instance = self.get_object()
-        driver = self.get_request_driver()
+        driver = get_request_driver(request)
 
         if not driver or instance.driver != driver:
             return Response(status=status.HTTP_403_FORBIDDEN)
