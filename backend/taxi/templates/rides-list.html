@@ -1,0 +1,37 @@
+{% load extras %}
+
+{% block rides-list %}
+<section class="rides-list-section">
+    {% current_time "%Y-%m-%d %I:%M %p" as time %}
+    <p><strong>Текущее время:</strong> {{ time }}</p>
+    {% if rides_list %}
+    <ul id="rides-list">
+        {% for ride in rides_list %}
+        <li class='ride_item'>
+            <h3>Поездка № {{ride.id}}</h3>
+            <p>
+                <strong>Отправление:</strong>
+                {{ ride.addresses.first|shorter_address_filter }}
+            </p>
+            <p>
+                <strong>Прибытие:</strong>
+                {{ ride.addresses.last|shorter_address_filter }}
+            </p>
+            <p>
+                <strong>Пассажир:</strong>
+                {{ ride.consumer|user_filter }}
+            </p>
+            <p>
+                <strong>Водитель:</strong>
+                {{ ride.driver|user_filter }}</p>
+            <p>
+                <strong>Статус:</strong>
+                {{ ride.status }}
+            </p>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    {% endif %}
+</section>
+{% endblock %}

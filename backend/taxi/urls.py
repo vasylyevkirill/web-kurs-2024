@@ -9,6 +9,7 @@ from taxi.views import (
     CarViewSet,
     DriverViewSet,
     RideViewSet,
+    available_rides_view,
 )
 
 app_name = 'taxi'
@@ -22,6 +23,11 @@ router.register(r'cars', CarViewSet, basename='cars')
 router.register(r'drivers', DriverViewSet, basename='drivers')
 router.register(r'rides', RideViewSet, basename='rides')
 
-urlpatterns: list = [
+
+render_urlpatterns: list = [
+    path(r'available/', available_rides_view, name='rides_available_render'),
+]
+
+api_urlpatterns: list = [
     *router.urls,
 ]

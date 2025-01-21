@@ -9,6 +9,7 @@ from import_export.formats.base_formats import CSV, XLSX, JSON
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
@@ -17,8 +18,13 @@ SECRET_KEY = 'django-insecure-rva#50*&ek(sd3+w0tc9iea4=g9rt2s(aeuy8qw^y^$*diguec
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+FRONTEND_PORT = os.getenv('FRONTEND_PORT')
+FRONTEND_ROOT = os.getenv('APP_ROOT', f'127.0.0.1:{FRONTEND_PORT}')
 
-ALLOWED_HOSTS = ['backend', 'localhost', '127.0.0.1', '0.0.0.0']
+if DEBUG:
+    FRONTEND_ROOT = f'http://localhost:{FRONTEND_PORT}'
+
+ALLOWED_HOSTS = ['backend', 'localhost', '127.0.0.1', '0.0.0.0', FRONTEND_ROOT]
 
 
 # Application definition
@@ -56,11 +62,15 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+
+    'main.middlewares.TimezoneMiddleware',
 ]
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
+
+CSRF_TRUSTED_ORIGINS = [FRONTEND_ROOT]
 
 ROOT_URLCONF = 'main.urls'
 

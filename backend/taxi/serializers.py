@@ -1,12 +1,11 @@
 import logging
-
+from django.urls import reverse
 from rest_framework import serializers
 
 from taxi.models import (
     Car, City, District, Street, Address, Driver,
     Consumer, Ride, DriverRate, ConsumerRate, RideAddressesQueue,
-    AbstractTaxiUser
-)
+    AbstractTaxiUser)
 
 
 logger = logging.getLogger(__name__)
@@ -116,7 +115,7 @@ class InlineRideAddressesQueueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RideAddressesQueue
-        fields = 'address order date_created date_ended full_address name'.split()
+        fields = 'full_address name order date_created date_ended'.split()
 
 
 class RideAddressesQueueSerializer(InlineRideAddressesQueueSerializer):
@@ -145,10 +144,14 @@ class RideCreateSerializer(serializers.ModelSerializer):
     addresses = InlineRideAddressesQueueSerializer(many=True)
     driver = DriverPreviewSerializer(read_only=True)
     consumer = serializers.PrimaryKeyRelatedField(queryset=Consumer.objects.all(), required=False)
+    absolute_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Ride
-        fields = 'consumer addresses driver date_created date_ended status price id'.split()
+        fields = 'consumer addresses driver date_created date_ended status price id absolute_url'.split()
+
+    def get_absolute_url(self, instance: Ride):
+        return reverse('taxi:rides-detail', args=[str(instance.pk)])
 
     def validate(self, data):
         data = super().validate(data)

@@ -18,6 +18,12 @@ module.exports = defineConfig({
         changeOrigin: true,
         prependPath: true,
       },
+      "/render": {
+        target: BACKEND_PATH,
+        secure: false,
+        changeOrigin: true,
+        prependPath: true,
+      },
       "/media": {
         target: BACKEND_PATH,
         changeOrigin: true,

@@ -1,7 +1,7 @@
 from datetime import datetime
 
-
 from django.db import models
+from django.db.models import Q
 from django.conf import settings
 from django.core import validators
 from django.db.models.query import QuerySet
@@ -132,7 +132,7 @@ class AbstractTaxiUser(models.Model):
         return self.profile_image.url if self.profile_image else None
 
     def __str__(self):
-        return f'f{self.user}'
+        return f'{self.user}'
 
     class Meta:
         verbose_name='Пользователь'
@@ -177,27 +177,20 @@ class Consumer(AbstractTaxiUser):
  
 
 class RideManager(models.Manager):
+    CANCELED_CONDITION = Q(date_ended=settings.FALLBACK_DATETIME)
+    AVAILABLE_CONDITION = Q(driver__isnull=True, date_ended__isnull=True)
+
     def canceled(self) -> QuerySet:
-        return self.objects.filter(
-            date_ended=settings.FALLBACK_DATETIME,
-        )
+        return self.filter(self.CANCELED_CONDITION)
 
     def non_canceled(self) -> QuerySet:
-        return self.objects.filter(
-            ~Q(date_ended=settings.FALLBACK_DATETIME)
-        )
+        return self.exclude(self.CANCELED_CONDITION)
 
     def available(self) -> QuerySet:
-        return self.objects.filter(
-            driver__isnull=True,
-            date_ended__isnull=True,
-        )
+        return self.filter(~self.CANCELED_CONDITION, self.AVAILABLE_CONDITION)
 
     def non_available(self) -> QuerySet:
-        return self.objects.filter(
-            driver__isnull=False,
-            date_ended__isnull=False,
-        )
+        return self.exclude(~self.CANCELED_CONDITION, self.AVAILABLE_CONDITION)
 
 
 class Ride(models.Model):
@@ -222,6 +215,11 @@ class Ride(models.Model):
         related_name='rides',
         null=True
     )
+    addresses = models.ManyToManyField(
+        Address,
+        through='RideAddressesQueue',
+        through_fields=('ride', 'address',),
+    )
     date_created = models.DateTimeField(auto_now_add=True)
     date_ended = models.DateTimeField(default=None, null=True)
     history = HistoricalRecords()
@@ -232,7 +230,7 @@ class Ride(models.Model):
     class Meta:
         verbose_name_plural = 'Поездки'
         unique_together = (('consumer', 'driver', 'date_created'),)
-        ordering = 'driver date_created '.split()
+        ordering = 'driver -date_created '.split()
  
     @property
     def price(self) -> float:
@@ -325,7 +323,6 @@ class RideAddressesQueue(models.Model):
         on_delete=models.CASCADE,
         null=False,
         blank=False,
-        related_name='addresses',
     )
     address = models.ForeignKey(
         Address,

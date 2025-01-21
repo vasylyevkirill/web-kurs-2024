@@ -1,7 +1,8 @@
 from datetime import datetime
 
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
+from django.conf import settings
+from django.shortcuts import get_object_or_404, render
 from django.contrib.auth import get_user_model
 from rest_framework import status, viewsets, serializers
 from rest_framework.filters import SearchFilter
@@ -33,6 +34,12 @@ from taxi.serializers import (
 User = get_user_model()
 
 
+def available_rides_view(request):
+    latest_rides = Ride.objects.available().order_by('-date_created')[:5]
+    context = {'rides_list': latest_rides, 'timezone': settings.TIME_ZONE}
+    return render(request, 'rides-list.html', context)
+
+
 class LargeResultsSetPagination(PageNumberPagination):
     page_size = 100
     page_size_query_param = 'page_size'
@@ -45,7 +52,6 @@ class CityViewSet(viewsets.ModelViewSet):
     filter_backends = [SearchFilter]
     search_fields = ['name'] 
 
-
     def get_serializer_class(self, *args, **kwargs):
         if self.action in 'list '.split():
             return CityPreviewSerializer
@@ -57,7 +63,6 @@ class DistrictViewSet(viewsets.ModelViewSet):
     serializer_class = DistrictSerializer
     filter_backends = [SearchFilter]
     search_fields = ['name', 'full_address']
-
 
     def get_serializer_class(self, *args, **kwargs):
         if self.action in 'list '.split():
@@ -116,14 +121,14 @@ class RideFilter(filters.FilterSet):
 
 
 class RideViewSet(viewsets.ModelViewSet):
-    queryset = Ride.objects.all()
+    queryset = Ride.objects.all().order_by('-date_created')
     serializer_class = RideSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = RideFilter
 
     def get_queryset(self):
         if 'available' in self.kwargs:
-            return Ride.objects.available.all()
+            return Ride.objects.available()
         return self.queryset
 
     def get_serializer_class(self) -> serializers.ModelSerializer:
